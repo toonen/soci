@@ -17,6 +17,7 @@
 #include "blob.h"
 #include "blob-exchange.h"
 #include "connection-pool.h"
+#include "date-types.h"
 #include "error.h"
 #include "exchange-traits.h"
 #include "into.h"
@@ -36,6 +37,7 @@
 #include "soci-config.h"
 #include "soci-platform.h"
 #include "statement.h"
+#include "timestamp.h"
 #include "transaction.h"
 #include "type-conversion.h"
 #include "type-conversion-traits.h"
@@ -54,6 +56,7 @@
 #include "boost-fusion.h"
 #endif // BOOST_VERSION
 #include "boost-optional.h"
+#include "boost-posix-time.h"
 #include "boost-tuple.h"
 #include "boost-gregorian-date.h"
 #endif // SOCI_USE_BOOST

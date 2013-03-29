@@ -150,9 +150,9 @@ void firebird_vector_use_type_backend::exchangeData(std::size_t row)
             setTextParam(tmp->c_str(), tmp->size(), buf_, var);
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         tmEncode(var->sqltype,
-            getUseVectorValue<std::tm>(data_, row), buf_);
+            getUseVectorValue<soci::timestamp>(data_, row), buf_);
         break;
         //  Not supported
         //  case x_cstring:
@@ -186,8 +186,8 @@ std::size_t firebird_vector_use_type_backend::size()
     case x_stdstring:
         sz = getVectorSize<std::string> (data_);
         break;
-    case x_stdtm:
-        sz = getVectorSize<std::tm> (data_);
+    case x_timestamp:
+        sz = getVectorSize<soci::timestamp> (data_);
         break;
 
     default:

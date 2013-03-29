@@ -7,6 +7,7 @@
 
 #define SOCI_ORACLE_SOURCE
 #include "soci-oracle.h"
+#include "timestamp.h"
 #include "blob.h"
 #include "error.h"
 #include "rowid.h"
@@ -16,7 +17,6 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-#include <ctime>
 #include <sstream>
 
 #ifdef _MSC_VER
@@ -94,7 +94,7 @@ void oracle_standard_into_type_backend::define_by_pos(
         buf_ = new char[size];
         data = buf_;
         break;
-    case x_stdtm:
+    case x_timestamp:
         oracleType = SQLT_DAT;
         size = 7 * sizeof(ub1);
         buf_ = new char[size];
@@ -171,7 +171,7 @@ void oracle_standard_into_type_backend::post_fetch(
     // first, deal with data
     if (gotData)
     {
-        // only std::string, std::tm and Statement need special handling
+        // only std::string, soci::timestamp and Statement need special handling
         if (type_ == x_stdstring)
         {
             if (indOCIHolder_ != -1)
@@ -196,11 +196,11 @@ void oracle_standard_into_type_backend::post_fetch(
                 *v = std::strtoull(buf_, NULL, 10);
             }
         }
-        else if (type_ == x_stdtm)
+        else if (type_ == x_timestamp)
         {
             if (indOCIHolder_ != -1)
             {
-                std::tm *t = static_cast<std::tm *>(data_);
+                soci::timestamp *t = static_cast<soci::timestamp *>(data_);
 
                 ub1 *pos = reinterpret_cast<ub1*>(buf_);
                 t->tm_isdst = -1;
@@ -211,7 +211,8 @@ void oracle_standard_into_type_backend::post_fetch(
                 t->tm_hour = *pos++ - 1;
                 t->tm_min = *pos++ - 1;
                 t->tm_sec = *pos++ - 1;
-                
+                t->ts_nsec = 0;
+
                 // normalize and compute the remaining fields
                 std::mktime(t);
             }

@@ -147,11 +147,11 @@ void mysql_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
                     set_invector_(data_, i, val);
                 }
                 break;
-            case x_stdtm:
+            case x_timestamp:
                 {
-                    // attempt to parse the string and convert to std::tm
-                    std::tm t;
-                    parse_std_tm(buf, t);
+                    // attempt to parse the string and convert to soci::timestamp
+                    soci::timestamp t;
+                    parse_soci_timestamp(buf, t);
 
                     set_invector_(data_, i, t);
                 }
@@ -194,7 +194,7 @@ void mysql_vector_into_type_backend::resize(std::size_t sz)
         break;
     case x_double:       resizevector_<double>       (data_, sz); break;
     case x_stdstring:    resizevector_<std::string>  (data_, sz); break;
-    case x_stdtm:        resizevector_<std::tm>      (data_, sz); break;
+    case x_timestamp:        resizevector_<soci::timestamp>      (data_, sz); break;
 
     default:
         throw soci_error("Into vector element used with non-supported type.");
@@ -216,7 +216,7 @@ std::size_t mysql_vector_into_type_backend::size()
         break;
     case x_double:       sz = get_vector_size<double>       (data_); break;
     case x_stdstring:    sz = get_vector_size<std::string>  (data_); break;
-    case x_stdtm:        sz = get_vector_size<std::tm>      (data_); break;
+    case x_timestamp:        sz = get_vector_size<soci::timestamp>      (data_); break;
 
     default:
         throw soci_error("Into vector element used with non-supported type.");

@@ -9,9 +9,9 @@
 #define SOCI_MYSQL_COMMON_H_INCLUDED
 
 #include "soci-mysql.h"
+#include "timestamp.h"
 // std
 #include <cstddef>
-#include <ctime>
 #include <sstream>
 #include <vector>
 
@@ -25,7 +25,7 @@ namespace mysql
 {
 
 // helper function for parsing datetime values
-void parse_std_tm(char const *buf, std::tm &t);
+void parse_soci_timestamp(char const *buf, soci::timestamp &t);
 
 // The idea is that infinity - infinity gives NaN, and NaN != NaN is true.
 //

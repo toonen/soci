@@ -125,9 +125,9 @@ void firebird_standard_use_type_backend::exchangeData()
                 setTextParam(tmp->c_str(), tmp->size(), buf_, var);
             }
             break;
-        case x_stdtm:
+        case x_timestamp:
             tmEncode(var->sqltype,
-                     static_cast<std::tm*>(data_), buf_);
+                     static_cast<soci::timestamp*>(data_), buf_);
             break;
 
             // cases that require special handling

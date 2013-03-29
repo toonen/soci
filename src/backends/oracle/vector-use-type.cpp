@@ -8,11 +8,11 @@
 #define soci_ORACLE_SOURCE
 #include "soci-oracle.h"
 #include "error.h"
+#include "timestamp.h"
 #include <soci-platform.h>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <sstream>
 
 #ifdef _MSC_VER
@@ -149,10 +149,10 @@ void oracle_vector_use_type_backend::prepare_for_bind(
             size = static_cast<sb4>(maxSize);
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *vp
-                = static_cast<std::vector<std::tm> *>(data);
+            std::vector<soci::timestamp> *vp
+                = static_cast<std::vector<soci::timestamp> *>(data);
 
             prepare_indicators(vp->size());
 
@@ -266,11 +266,11 @@ void oracle_vector_use_type_backend::pre_use(indicator const *ind)
             pos += entrySize;
         }
     }
-    else if (type_ == x_stdtm)
+    else if (type_ == x_timestamp)
     {
-        std::vector<std::tm> *vp
-            = static_cast<std::vector<std::tm> *>(data_);
-        std::vector<std::tm> &v(*vp);
+        std::vector<soci::timestamp> *vp
+            = static_cast<std::vector<soci::timestamp> *>(data_);
+        std::vector<soci::timestamp> &v(*vp);
 
         ub1* pos = reinterpret_cast<ub1*>(buf_);
         std::size_t const vsize = v.size();
@@ -365,10 +365,10 @@ std::size_t oracle_vector_use_type_backend::size()
             sz = vp->size();
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *vp
-                = static_cast<std::vector<std::tm> *>(data_);
+            std::vector<soci::timestamp> *vp
+                = static_cast<std::vector<soci::timestamp> *>(data_);
             sz = vp->size();
         }
         break;

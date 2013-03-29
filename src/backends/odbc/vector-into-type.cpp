@@ -7,11 +7,11 @@
 
 #define SOCI_ODBC_SOURCE
 #include "soci-odbc.h"
+#include "timestamp.h"
 #include <cassert>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <sstream>
 #include <stdio.h>  // sscanf()
 
@@ -159,11 +159,11 @@ void odbc_vector_into_type_backend::define_by_pos(
             data = buf_;
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
             odbcType_ = SQL_C_TYPE_TIMESTAMP;
-            std::vector<std::tm> *v
-                = static_cast<std::vector<std::tm> *>(data);
+            std::vector<soci::timestamp> *v
+                = static_cast<std::vector<soci::timestamp> *>(data);
 
             prepare_indicators(v->size());
 
@@ -203,7 +203,7 @@ void odbc_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
     {
         // first, deal with data
 
-        // only std::string, std::tm and Statement need special handling
+        // only std::string, soci::timestamp and Statement need special handling
         if (type_ == x_char)
         {
             std::vector<char> *vp
@@ -233,17 +233,17 @@ void odbc_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
                 pos += colSize_;
             }
         }
-        else if (type_ == x_stdtm)
+        else if (type_ == x_timestamp)
         {
-            std::vector<std::tm> *vp
-                = static_cast<std::vector<std::tm> *>(data_);
+            std::vector<soci::timestamp> *vp
+                = static_cast<std::vector<soci::timestamp> *>(data_);
 
-            std::vector<std::tm> &v(*vp);
+            std::vector<soci::timestamp> &v(*vp);
             char *pos = buf_;
             std::size_t const vsize = v.size();
             for (std::size_t i = 0; i != vsize; ++i)
             {
-                std::tm t;
+                soci::timestamp t;
 
                 TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(pos);
                 t.tm_isdst = -1;
@@ -253,6 +253,7 @@ void odbc_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
                 t.tm_hour = ts->hour;
                 t.tm_min = ts->minute;
                 t.tm_sec = ts->second;
+                t.ts_nsec = ts->fraction;
 
                 // normalize and compute the remaining fields
                 std::mktime(&t);
@@ -385,10 +386,10 @@ void odbc_vector_into_type_backend::resize(std::size_t sz)
             v->resize(sz);
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *v
-                = static_cast<std::vector<std::tm> *>(data_);
+            std::vector<soci::timestamp> *v
+                = static_cast<std::vector<soci::timestamp> *>(data_);
             v->resize(sz);
         }
         break;
@@ -451,10 +452,10 @@ std::size_t odbc_vector_into_type_backend::size()
             sz = v->size();
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *v
-                = static_cast<std::vector<std::tm> *>(data_);
+            std::vector<soci::timestamp> *v
+                = static_cast<std::vector<soci::timestamp> *>(data_);
             sz = v->size();
         }
         break;

@@ -15,7 +15,6 @@
 #include <ciso646>
 #include <cstdlib>
 #include <cstring>
-#include <ctime>
 #include <string>
 
 #ifdef _MSC_VER
@@ -122,11 +121,11 @@ void mysql_standard_into_type_backend::post_fetch(
                 parse_num(buf, *dest);
             }
             break;
-        case x_stdtm:
+        case x_timestamp:
             {
-                // attempt to parse the string and convert to std::tm
-                std::tm *dest = static_cast<std::tm *>(data_);
-                parse_std_tm(buf, *dest);
+                // attempt to parse the string and convert to soci::timestamp
+                soci::timestamp *dest = static_cast<soci::timestamp *>(data_);
+                parse_soci_timestamp(buf, *dest);
             }
             break;
         default:

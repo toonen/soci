@@ -7,11 +7,11 @@
 
 #define SOCI_ODBC_SOURCE
 #include "soci-odbc.h"
+#include "timestamp.h"
 #include <cassert>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <sstream>
 
 #ifdef _MSC_VER
@@ -190,10 +190,10 @@ void odbc_vector_use_type_backend::prepare_for_bind(void *&data, SQLUINTEGER &si
             size = static_cast<SQLINTEGER>(maxSize);
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *vp
-                = static_cast<std::vector<std::tm> *>(data);
+            std::vector<soci::timestamp> *vp
+                = static_cast<std::vector<soci::timestamp> *>(data);
 
             prepare_indicators(vp->size());
 
@@ -295,18 +295,18 @@ void odbc_vector_use_type_backend::bind_by_name(
 void odbc_vector_use_type_backend::pre_use(indicator const *ind)
 {
     // first deal with data
-    if (type_ == x_stdtm)
+    if (type_ == x_timestamp)
     {
-        std::vector<std::tm> *vp
-             = static_cast<std::vector<std::tm> *>(data_);
+        std::vector<soci::timestamp> *vp
+             = static_cast<std::vector<soci::timestamp> *>(data_);
 
-        std::vector<std::tm> &v(*vp);
+        std::vector<soci::timestamp> &v(*vp);
 
         char *pos = buf_;
         std::size_t const vsize = v.size();
         for (std::size_t i = 0; i != vsize; ++i)
         {
-            std::tm t = v[i];
+            soci::timestamp t = v[i];
             TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(pos);
 
             ts->year = static_cast<SQLSMALLINT>(t.tm_year + 1900);
@@ -315,7 +315,7 @@ void odbc_vector_use_type_backend::pre_use(indicator const *ind)
             ts->hour = static_cast<SQLUSMALLINT>(t.tm_hour);
             ts->minute = static_cast<SQLUSMALLINT>(t.tm_min);
             ts->second = static_cast<SQLUSMALLINT>(t.tm_sec);
-            ts->fraction = 0;
+            ts->fraction = static_cast<SQLUINTEGER>(t.ts_nsec);
             pos += sizeof(TIMESTAMP_STRUCT);
         }
     }
@@ -435,10 +435,10 @@ std::size_t odbc_vector_use_type_backend::size()
             sz = vp->size();
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *vp
-                = static_cast<std::vector<std::tm> *>(data_);
+            std::vector<soci::timestamp> *vp
+                = static_cast<std::vector<soci::timestamp> *>(data_);
             sz = vp->size();
         }
         break;

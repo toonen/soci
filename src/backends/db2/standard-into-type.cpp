@@ -9,7 +9,7 @@
 #define SOCI_DB2_SOURCE
 #include "soci-db2.h"
 #include "common.h"
-#include <ctime>
+#include "timestamp.h"
 
 using namespace soci;
 using namespace soci::details;
@@ -31,6 +31,10 @@ void db2_standard_into_type_backend::define_by_pos(
         cType = SQL_C_CHAR;
         size = sizeof(char) + 1;
         buf = new char[size];
+        if (buf == NULL)
+        {
+            throw soci_error("failed to allocate memory for a temporary character");
+        }
         data = buf;
         break;
     case x_stdstring:
@@ -41,6 +45,10 @@ void db2_standard_into_type_backend::define_by_pos(
         size = size > details::db2::cli_max_buffer ? details::db2::cli_max_buffer : size;
         size++;
         buf = new char[size];
+        if (buf == NULL)
+        {
+            throw soci_error("failed to allocate memory for a temporary C-style string");
+        }
         data = buf;
         break;
     case x_short:
@@ -63,10 +71,14 @@ void db2_standard_into_type_backend::define_by_pos(
         cType = SQL_C_DOUBLE;
         size = sizeof(double);
         break;
-    case x_stdtm:
+    case x_timestamp:
         cType = SQL_C_TYPE_TIMESTAMP;
         size = sizeof(TIMESTAMP_STRUCT);
         buf = new char[size];
+        if (buf == NULL)
+        {
+            throw soci_error("failed to allocate memory for a temporary timestamp structure");
+        }
         data = buf;
         break;
     case x_rowid:
@@ -124,7 +136,7 @@ void db2_standard_into_type_backend::post_fetch(
             }
         }
 
-        // only std::string and std::tm need special handling
+        // only std::string and soci::timestamp need special handling
         if (type == x_char)
         {
             char *c = static_cast<char*>(data);
@@ -139,9 +151,9 @@ void db2_standard_into_type_backend::post_fetch(
                 throw soci_error("Buffer size overflow; maybe got too large string");
             }
         }
-        else if (type == x_stdtm)
+        else if (type == x_timestamp)
         {
-            std::tm *t = static_cast<std::tm *>(data);
+            soci::timestamp *t = static_cast<soci::timestamp *>(data);
 
             TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(buf);
             t->tm_isdst = -1;
@@ -151,6 +163,7 @@ void db2_standard_into_type_backend::post_fetch(
             t->tm_hour = ts->hour;
             t->tm_min = ts->minute;
             t->tm_sec = ts->second;
+            t->ts_nsec = ts->fraction;
 
             // normalize and compute the remaining fields
             std::mktime(t);

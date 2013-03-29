@@ -12,7 +12,6 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
-#include <ctime>
 #include <string>
 #include <vector>
 
@@ -129,11 +128,11 @@ void sqlite3_vector_into_type_backend::post_fetch(bool gotData, indicator * ind)
                 set_in_vector(data_, i, val);
             }
             break;
-        case x_stdtm:
+        case x_timestamp:
             {
-                // attempt to parse the string and convert to std::tm
-                std::tm t;
-                parse_std_tm(buf, t);
+                // attempt to parse the string and convert to soci::timestamp
+                soci::timestamp t;
+                parse_soci_timestamp(buf, t);
 
                 set_in_vector(data_, i, t);
             }
@@ -170,8 +169,8 @@ void sqlite3_vector_into_type_backend::resize(std::size_t sz)
     case x_stdstring:
         resize_vector<std::string>(data_, sz);
         break;
-    case x_stdtm:
-        resize_vector<std::tm>(data_, sz);
+    case x_timestamp:
+        resize_vector<soci::timestamp>(data_, sz);
         break;
     default:
         throw soci_error("Into vector element used with non-supported type.");
@@ -205,8 +204,8 @@ std::size_t sqlite3_vector_into_type_backend::size()
     case x_stdstring:
         sz = get_vector_size<std::string>(data_);
         break;
-    case x_stdtm:
-        sz = get_vector_size<std::tm>(data_);
+    case x_timestamp:
+        sz = get_vector_size<soci::timestamp>(data_);
         break;
     default:
         throw soci_error("Into vector element used with non-supported type.");

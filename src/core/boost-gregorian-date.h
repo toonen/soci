@@ -9,6 +9,7 @@
 #define SOCI_BOOST_GREGORIAN_DATE_H_INCLUDED
 
 #include "type-conversion-traits.h"
+#include "date-types.h"
 // boost
 #include <boost/date_time/gregorian/gregorian_types.hpp>
 #include <boost/date_time/gregorian/conversion.hpp>
@@ -21,7 +22,7 @@ namespace soci
 template<>
 struct type_conversion<boost::gregorian::date>
 {
-    typedef std::tm base_type;
+    typedef soci::timestamp base_type;
 
     static void from_base(
         base_type const & in, indicator ind, boost::gregorian::date & out)

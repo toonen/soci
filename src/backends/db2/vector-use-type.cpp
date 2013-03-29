@@ -8,10 +8,10 @@
 
 #define SOCI_DB2_SOURCE
 #include "soci-db2.h"
+#include "timestamp.h"
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <sstream>
 
 #ifdef _MSC_VER
@@ -110,6 +110,10 @@ void db2_vector_use_type_backend::prepare_for_bind(void *&data, SQLUINTEGER &siz
 
             size = sizeof(char) * 2;
             buf = new char[size * vsize];
+            if (buf == NULL)
+            {
+                throw soci_error("failed to allocate memory for a temporary array of characters");
+            }
 
             char *pos = buf;
 
@@ -144,6 +148,10 @@ void db2_vector_use_type_backend::prepare_for_bind(void *&data, SQLUINTEGER &siz
             }
 
             buf = new char[maxSize * vecSize];
+            if (buf == NULL)
+            {
+                throw soci_error("failed to allocate memory for a temporary character C-stype strings");
+            }
             memset(buf, 0, maxSize * vecSize);
 
             char *pos = buf;
@@ -157,21 +165,25 @@ void db2_vector_use_type_backend::prepare_for_bind(void *&data, SQLUINTEGER &siz
             size = static_cast<SQLINTEGER>(maxSize);
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *vp
-                = static_cast<std::vector<std::tm> *>(data);
+            std::vector<soci::timestamp> *vp
+                = static_cast<std::vector<soci::timestamp> *>(data);
 
             prepare_indicators(vp->size());
 
             buf = new char[sizeof(TIMESTAMP_STRUCT) * vp->size()];
+            if (buf == NULL)
+            {
+                throw soci_error("failed to allocate memory for a temporary array of timestamps");
+            }
 
             sqlType = SQL_TYPE_TIMESTAMP;
             cType = SQL_C_TYPE_TIMESTAMP;
             data = buf;
-            size = 19; // This number is not the size in bytes, but the number
-                      // of characters in the date if it was written out
-                      // yyyy-mm-dd hh:mm:ss
+            size = 29; // This number is not the size in bytes, but the number
+                       // of characters in the date if it was written out
+                       // yyyy-mm-dd-hh.mm.ss.nnnnnnnnn
         }
         break;
 
@@ -257,18 +269,19 @@ void db2_vector_use_type_backend::bind_by_name(
 void db2_vector_use_type_backend::pre_use(indicator const *ind)
 {
     // first deal with data
-    if (type == x_stdtm)
+    if (type == x_timestamp)
     {
-        std::vector<std::tm> *vp
-             = static_cast<std::vector<std::tm> *>(data);
+        std::vector<soci::timestamp> *vp
+            = static_cast<std::vector<soci::timestamp> *>(data);
 
-        std::vector<std::tm> &v(*vp);
+        std::vector<soci::timestamp> &v(*vp);
 
         char *pos = buf;
+
         std::size_t const vsize = v.size();
         for (std::size_t i = 0; i != vsize; ++i)
         {
-            std::tm t = v[i];
+            soci::timestamp t = v[i];
             TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(pos);
 
             ts->year = static_cast<SQLSMALLINT>(t.tm_year + 1900);
@@ -277,7 +290,7 @@ void db2_vector_use_type_backend::pre_use(indicator const *ind)
             ts->hour = static_cast<SQLUSMALLINT>(t.tm_hour);
             ts->minute = static_cast<SQLUSMALLINT>(t.tm_min);
             ts->second = static_cast<SQLUSMALLINT>(t.tm_sec);
-            ts->fraction = 0;
+            ts->fraction = static_cast<SQLUINTEGER>(t.ts_nsec);
             pos += sizeof(TIMESTAMP_STRUCT);
         }
     }
@@ -369,10 +382,10 @@ std::size_t db2_vector_use_type_backend::size()
             sz = vp->size();
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *vp
-                = static_cast<std::vector<std::tm> *>(data);
+            std::vector<soci::timestamp> *vp
+                = static_cast<std::vector<soci::timestamp> *>(data);
             sz = vp->size();
         }
         break;

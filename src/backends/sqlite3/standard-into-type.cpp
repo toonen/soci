@@ -12,7 +12,6 @@
 #include "blob.h"
 // std
 #include <cstdlib>
-#include <ctime>
 #include <string>
 
 using namespace soci;
@@ -123,11 +122,11 @@ void sqlite3_standard_into_type_backend::post_fetch(bool gotData,
                 *dest = static_cast<double>(val);
             }
             break;
-        case x_stdtm:
+        case x_timestamp:
             {
-                // attempt to parse the string and convert to std::tm
-                std::tm *dest = static_cast<std::tm *>(data_);
-                parse_std_tm(buf, *dest);
+                // attempt to parse the string and convert to soci::timestamp
+                soci::timestamp *dest = static_cast<soci::timestamp *>(data_);
+                parse_soci_timestamp(buf, *dest);
             }
             break;
         case x_rowid:

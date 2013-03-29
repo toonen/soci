@@ -32,7 +32,7 @@ struct table_creator_one : public table_creator_base
         : table_creator_base(sql)
     {
         sql << "CREATE TABLE SOCI_TEST(ID INTEGER, VAL SMALLINT, C CHAR, STR VARCHAR(20), SH SMALLINT, UL NUMERIC(20), D DOUBLE, "
-            "TM TIMESTAMP, I1 INTEGER, I2 INTEGER, I3 INTEGER, NAME VARCHAR(20))";
+            "TM TIMESTAMP(9), I1 INTEGER, I2 INTEGER, I3 INTEGER, NAME VARCHAR(20))";
     }
 };
 
@@ -320,13 +320,14 @@ void test2() {
         }
 
         {
-            std::tm dt;
+            soci::timestamp dt;
             sql << "select current timestamp from sysibm.sysdummy1",into(dt);
             sql << "insert into db2inst1.SOCI_TEST (dt) values (:dt)",use(dt,"dt");
-            std::tm dt2;
+            soci::timestamp dt2;
             sql << "select dt from db2inst1.SOCI_TEST where dt is not null", into(dt2);
             assert(dt2.tm_year == dt.tm_year && dt2.tm_mon == dt.tm_mon && dt2.tm_mday == dt.tm_mday &&
-                dt2.tm_hour == dt.tm_hour && dt2.tm_min == dt.tm_min && dt2.tm_sec == dt.tm_sec);
+                dt2.tm_hour == dt.tm_hour && dt2.tm_min == dt.tm_min && dt2.tm_sec == dt.tm_sec &&
+                dt2.ts_nsec == dt.ts_nsec);
         }
         
         sql<<"DROP TABLE DB2INST1.SOCI_TEST";
@@ -341,12 +342,12 @@ void test3() {
         session sql(backEnd, connectString);
         int i;
 
-        std::string query = "CREATE TABLE DB2INST1.SOCI_TEST (ID BIGINT,DATA VARCHAR(8),DT TIMESTAMP)";
+        std::string query = "CREATE TABLE DB2INST1.SOCI_TEST (ID BIGINT,DATA VARCHAR(8),DT TIMESTAMP(9))";
         sql << query;
 
         std::vector<long long> ids(100);
         std::vector<std::string> data(100);
-        std::vector<std::tm> dts(100);
+        std::vector<soci::timestamp> dts(100);
         for (int i = 0; i < 100; i++)
         {
             ids[i] = 1000000000LL + i;
@@ -357,6 +358,7 @@ void test3() {
             dts[i].tm_hour = 0;
             dts[i].tm_min = 0;
             dts[i].tm_sec = i % 60;
+            dts[i].ts_nsec = i % 60;
         }
         
         sql << "insert into db2inst1.SOCI_TEST (id, data, dt) values (:id, :data, :dt)",
@@ -369,7 +371,7 @@ void test3() {
             const row & r = *it;
             const long long id = r.get<long long>(0);
             const std::string data = r.get<std::string>(1);
-            const std::tm dt = r.get<std::tm>(2);
+            const soci::timestamp dt = r.get<soci::timestamp>(2);
             
             assert(id == 1000000000LL + i);
             assert(data == "test");
@@ -379,6 +381,7 @@ void test3() {
             assert(dt.tm_hour == 0);
             assert(dt.tm_min == 0);
             assert(dt.tm_sec == i % 60);
+            assert(dt.ts_nsec == i % 60);
 
             i += 1;
         }

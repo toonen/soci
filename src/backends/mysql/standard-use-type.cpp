@@ -116,12 +116,12 @@ void mysql_standard_use_type_backend::pre_use(indicator const *ind)
                     *static_cast<double*>(data_));
             }
             break;
-        case x_stdtm:
+        case x_timestamp:
             {
                 std::size_t const bufSize = 22;
                 buf_ = new char[bufSize];
 
-                std::tm *t = static_cast<std::tm *>(data_);
+                soci::timestamp *t = static_cast<soci::timestamp *>(data_);
                 snprintf(buf_, bufSize,
                     "\'%d-%02d-%02d %02d:%02d:%02d\'",
                     t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,

@@ -7,7 +7,7 @@
 
 #define SOCI_ODBC_SOURCE
 #include "soci-odbc.h"
-#include <ctime>
+#include "timestamp.h"
 #include <stdio.h>  // sscanf()
 
 using namespace soci;
@@ -87,7 +87,7 @@ void odbc_standard_into_type_backend::define_by_pos(
         odbcType_ = SQL_C_DOUBLE;
         size = sizeof(double);
         break;
-    case x_stdtm:
+    case x_timestamp:
         odbcType_ = SQL_C_TYPE_TIMESTAMP;
         size = sizeof(TIMESTAMP_STRUCT);
         buf_ = new char[size];
@@ -149,7 +149,7 @@ void odbc_standard_into_type_backend::post_fetch(
             }
         }
 
-        // only std::string and std::tm need special handling
+        // only std::string and soci::timestamp need special handling
         if (type_ == x_char)
         {
             char *c = static_cast<char*>(data_);
@@ -164,9 +164,9 @@ void odbc_standard_into_type_backend::post_fetch(
                 throw soci_error("Buffer size overflow; maybe got too large string");
             }
         }
-        else if (type_ == x_stdtm)
+        else if (type_ == x_timestamp)
         {
-            std::tm *t = static_cast<std::tm *>(data_);
+            soci::timestamp *t = static_cast<soci::timestamp *>(data_);
 
             TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(buf_);
             t->tm_isdst = -1;
@@ -176,6 +176,7 @@ void odbc_standard_into_type_backend::post_fetch(
             t->tm_hour = ts->hour;
             t->tm_min = ts->minute;
             t->tm_sec = ts->second;
+            t->ts_nsec = ts->fraction;
 
             // normalize and compute the remaining fields
             std::mktime(t);

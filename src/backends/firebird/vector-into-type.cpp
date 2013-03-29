@@ -91,9 +91,9 @@ void firebird_vector_into_type_backend::exchangeData(std::size_t row)
     case x_stdstring:
         setIntoVector(data_, row, getTextParam(var));
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::tm data;
+            soci::timestamp data;
             tmDecode(var->sqltype, buf_, &data);
             setIntoVector(data_, row, data);
         }
@@ -150,8 +150,8 @@ void firebird_vector_into_type_backend::resize(std::size_t sz)
     case x_stdstring:
         resizeVector<std::string> (data_, sz);
         break;
-    case x_stdtm:
-        resizeVector<std::tm> (data_, sz);
+    case x_timestamp:
+        resizeVector<soci::timestamp> (data_, sz);
         break;
 
     default:
@@ -183,8 +183,8 @@ std::size_t firebird_vector_into_type_backend::size()
     case x_stdstring:
         sz = getVectorSize<std::string> (data_);
         break;
-    case x_stdtm:
-        sz = getVectorSize<std::tm> (data_);
+    case x_timestamp:
+        sz = getVectorSize<soci::timestamp> (data_);
         break;
 
     default:

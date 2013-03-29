@@ -11,12 +11,12 @@
 #include "error.h"
 #include "rowid.h"
 #include "statement.h"
+#include "timestamp.h"
 #include <soci-platform.h>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-#include <ctime>
 #include <sstream>
 
 #ifdef _MSC_VER
@@ -88,7 +88,7 @@ void oracle_standard_use_type_backend::prepare_for_bind(
         buf_ = new char[size];
         data = buf_;
         break;
-    case x_stdtm:
+    case x_timestamp:
         oracleType = SQLT_DAT;
         size = 7 * sizeof(ub1);
         buf_ = new char[size];
@@ -252,9 +252,9 @@ void oracle_standard_use_type_backend::pre_use(indicator const *ind)
             buf_[toCopy] = '\0';
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::tm *t = static_cast<std::tm *>(data_);
+            soci::timestamp *t = static_cast<soci::timestamp *>(data_);
             ub1* pos = reinterpret_cast<ub1*>(buf_);
 
             *pos++ = static_cast<ub1>(100 + (1900 + t->tm_year) / 100);
@@ -391,11 +391,11 @@ void oracle_standard_use_type_backend::post_use(bool gotData, indicator *ind)
                 }
             }
             break;
-        case x_stdtm:
+        case x_timestamp:
             {
-                std::tm & original = *static_cast<std::tm *>(data_);
+                soci::timestamp & original = *static_cast<soci::timestamp *>(data_);
 
-                std::tm bound;
+                soci::timestamp bound;
                 ub1 *pos = reinterpret_cast<ub1*>(buf_);
                 bound.tm_isdst = -1;
                 bound.tm_year = (*pos++ - 100) * 100;

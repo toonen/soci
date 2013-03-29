@@ -15,7 +15,7 @@
 namespace // anonymous
 {
 
-// helper function for parsing decimal data (for std::tm)
+// helper function for parsing decimal data (for soci::timestamp)
 long parse10(char const *&p1, char *&p2, const char *msg)
 {
     long v = std::strtol(p1, &p2, 10);
@@ -33,14 +33,14 @@ long parse10(char const *&p1, char *&p2, const char *msg)
 } // namespace anonymous
 
 
-void soci::details::mysql::parse_std_tm(char const *buf, std::tm &t)
+void soci::details::mysql::parse_soci_timestamp(char const *buf, soci::timestamp &t)
 {
     char const *p1 = buf;
     char *p2;
     long year, month, day;
     long hour = 0, minute = 0, second = 0;
 
-    const char *errMsg = "Cannot convert data to std::tm.";
+    const char *errMsg = "Cannot convert data to soci::timestamp.";
 
     if (strchr(buf, '-') != NULL)
     {
@@ -71,6 +71,7 @@ void soci::details::mysql::parse_std_tm(char const *buf, std::tm &t)
     t.tm_hour = hour;
     t.tm_min  = minute;
     t.tm_sec  = second;
+    t.ts_nsec = 0;
 
     std::mktime(&t);
 }

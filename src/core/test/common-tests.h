@@ -17,6 +17,7 @@
 #include <boost-optional.h>
 #include <boost-tuple.h>
 #include <boost-gregorian-date.h>
+#include <boost-posix-time.h>
 #if defined(BOOST_VERSION) && BOOST_VERSION >= 103500
 #include <boost-fusion.h>
 #endif // BOOST_VERSION
@@ -340,6 +341,8 @@ public:
         test_pull5();
         test_issue67();
         test_prepared_insert_with_orm_type();
+        test_subsecond_timestamps();
+        test_boost_posix_time();
     }
 
 private:
@@ -3869,8 +3872,279 @@ void test_issue67()
             std::cout << "test issue-67 passed - check memory debugger output for leaks" << std::endl;
         }
     }
+}
 
-}; // class common_tests
+// test boost::posix_time and sub-second timestamps
+void test_subsecond_timestamps()
+{
+    session sql(backEndFactory_, connectString_);
+
+    {
+        auto_table_creator tableCreator(tc_.table_creator_1(sql));
+
+        soci::timestamp nov15;
+        nov15.tm_year = 105;
+        nov15.tm_mon = 10;
+        nov15.tm_mday = 15;
+        nov15.tm_hour = 10;
+        nov15.tm_min = 13;
+        nov15.tm_sec = 30;
+        nov15.ts_nsec = 300000000;
+
+        sql << "insert into soci_test(tm) values(:tm)", use(nov15);
+
+        soci::timestamp t;
+
+        sql << "select tm from soci_test", into(t);
+
+        assert(t.tm_year == 105);
+        assert(t.tm_mon  == 10);
+        assert(t.tm_mday == 15);
+        assert(t.tm_hour == 10);
+        assert(t.tm_min  == 13);
+        assert(t.tm_sec  == 30);
+        // nanoseconds might be zero if the backend does not support sub-second timestamps
+        assert(t.ts_nsec == 300000000 || t.ts_nsec == 0);
+    }
+
+    {
+        auto_table_creator tableCreator(tc_.table_creator_1(sql));
+
+        soci::timestamp nov15;
+        nov15.tm_year = 105;
+        nov15.tm_mon = 10;
+        nov15.tm_mday = 15;
+        nov15.tm_hour = 10;
+        nov15.tm_min = 13;
+
+        std::vector<soci::timestamp> t_in;
+        for (int i = 0; i < 100; i++)
+        {
+            nov15.tm_sec = i % 60;
+            nov15.ts_nsec = i * 1000000;
+            t_in.push_back(nov15);
+        }
+
+        sql << "insert into soci_test(tm) values(:tm)", use(t_in);
+
+        std::vector<soci::timestamp> t_out(200);
+        sql << "select tm from soci_test", into(t_out);
+
+        assert(t_out.size() == 100);
+        for (int i = 0; i < 100; i++)
+        {
+            assert(t_out[i].tm_year == 105);
+            assert(t_out[i].tm_mon  == 10);
+            assert(t_out[i].tm_mday == 15);
+            assert(t_out[i].tm_hour == 10);
+            assert(t_out[i].tm_min  == 13);
+            assert(t_out[i].tm_sec  == i % 60);
+            // nanoseconds might be zero if the backend does not support sub-second timestamps
+            assert(t_out[i].ts_nsec == i * 1000000 || t_out[i].ts_nsec == 0);
+        }
+    }
+
+    std::cout << "test subsecond_timestamps passed" << std::endl;
+}
+
+// test boost::posix_time and sub-second timestamps
+void test_boost_posix_time()
+{
+#   if defined(HAVE_BOOST)
+    {
+        session sql(backEndFactory_, connectString_);
+
+        {
+            auto_table_creator tableCreator(tc_.table_creator_1(sql));
+
+            std::tm nov15;
+            nov15.tm_year = 105;
+            nov15.tm_mon = 10;
+            nov15.tm_mday = 15;
+            nov15.tm_hour = 10;
+            nov15.tm_min = 13;
+            nov15.tm_sec = 30;
+
+            sql << "insert into soci_test(tm) values(:tm)", use(nov15);
+
+            boost::posix_time::ptime pt;
+
+            sql << "select tm from soci_test", into(pt);
+
+            assert(pt.is_special() == false);
+
+            const boost::gregorian::date pt_date = pt.date();
+            assert(pt_date.year() == 2005);
+            assert(pt_date.month() == 11);
+            assert(pt_date.day() == 15);
+
+            const boost::posix_time::time_duration pt_time = pt.time_of_day();
+            assert(pt_time.hours() == 10);
+            assert(pt_time.minutes() == 13);
+            assert(pt_time.seconds() == 30);
+            assert(pt_time.fractional_seconds() == 0);
+        }
+
+        {
+            auto_table_creator tableCreator(tc_.table_creator_1(sql));
+
+            soci::timestamp nov15;
+            nov15.tm_year = 105;
+            nov15.tm_mon = 10;
+            nov15.tm_mday = 15;
+            nov15.tm_hour = 10;
+            nov15.tm_min = 13;
+            nov15.tm_sec = 30;
+            nov15.ts_nsec = 45678;
+            sql << "insert into soci_test(tm) values(:tm)", use(nov15);
+
+            boost::posix_time::ptime pt;
+
+            sql << "select tm from soci_test", into(pt);
+
+            assert(pt.is_special() == false);
+
+            const boost::gregorian::date pt_date = pt.date();
+            assert(pt_date.year() == 2005);
+            assert(pt_date.month() == 11);
+            assert(pt_date.day() == 15);
+
+            const boost::posix_time::time_duration pt_time = pt.time_of_day();
+            assert(pt_time.hours() == 10);
+            assert(pt_time.minutes() == 13);
+            assert(pt_time.seconds() == 30);
+            assert(pt_time.fractional_seconds() == 45 || pt_time.fractional_seconds() == 0);
+        }
+
+        {
+            auto_table_creator tableCreator(tc_.table_creator_1(sql));
+
+            boost::posix_time::ptime nov15(boost::gregorian::date(2005, 11, 15), boost::posix_time::time_duration(10, 13, 30));
+            sql << "insert into soci_test(tm) values(:tm)", use(nov15);
+
+            std::tm t;
+            sql << "select tm from soci_test", into(t);
+            assert(t.tm_year == 105);
+            assert(t.tm_mon  == 10);
+            assert(t.tm_mday == 15);
+            assert(t.tm_hour == 10);
+            assert(t.tm_min  == 13);
+            assert(t.tm_sec  == 30);
+        }
+
+        {
+            auto_table_creator tableCreator(tc_.table_creator_1(sql));
+
+            boost::posix_time::ptime nov15(boost::gregorian::date(2005, 11, 15), boost::posix_time::time_duration(10, 13, 30));
+            nov15 += boost::posix_time::microseconds(20);
+            sql << "insert into soci_test(tm) values(:tm)", use(nov15);
+
+            soci::timestamp t;
+            sql << "select tm from soci_test", into(t);
+            assert(t.tm_year == 105);
+            assert(t.tm_mon  == 10);
+            assert(t.tm_mday == 15);
+            assert(t.tm_hour == 10);
+            assert(t.tm_min  == 13);
+            assert(t.tm_sec  == 30);
+            assert(t.ts_nsec == 20000 || t.ts_nsec == 0);
+        }
+
+        {
+            auto_table_creator tableCreator(tc_.table_creator_1(sql));
+
+            boost::posix_time::ptime nov15(boost::gregorian::date(2005, 11, 15), boost::posix_time::time_duration(10, 13, 30));
+
+            sql << "insert into soci_test(tm) values(:tm)", use(nov15);
+
+            boost::posix_time::ptime pt;
+
+            sql << "select tm from soci_test", into(pt);
+
+            assert(pt.is_special() == false);
+            assert(nov15 == pt);
+        }
+
+        {
+            auto_table_creator tableCreator(tc_.table_creator_1(sql));
+
+            sql << "insert into soci_test(tm) values(NULL)";
+
+            boost::posix_time::ptime pt;
+
+            sql << "select tm from soci_test", into(pt);
+
+            assert(pt.is_not_a_date_time() == true);
+        }
+
+        {
+            auto_table_creator tableCreator(tc_.table_creator_1(sql));
+
+            std::vector<boost::posix_time::ptime> pt_in;
+            std::vector<boost::posix_time::ptime> pt_out(200);
+            boost::posix_time::ptime nov15(boost::gregorian::date(2005, 11, 15), boost::posix_time::time_duration(10, 13, 30));
+
+            for (int i = 0; i < 100; i++)
+            {
+                pt_in.push_back(nov15 + boost::posix_time::seconds(i) + boost::posix_time::microseconds(i));
+            }
+
+            sql << "insert into soci_test(tm) values(:tm)", use(pt_in);
+
+            sql << "select tm from soci_test", into(pt_out);
+
+            assert(pt_out.size() == 100);
+            for (int i = 0; i < 100; i++)
+            {
+                assert(pt_out[i].is_special() == false);
+                assert(pt_out[i] == nov15 + boost::posix_time::seconds(i) + boost::posix_time::microseconds(i) ||
+                    pt_out[i] == nov15 + boost::posix_time::seconds(i));
+            }
+
+            {
+                statement st = (sql.prepare << "insert into soci_test(tm) values(:tm)", use(pt_in));
+                for (int j = 1; j < 5 ; j++)
+                {
+                    for (int i = 0; i < 100; i++)
+                    {
+                        pt_in[i] += boost::posix_time::seconds(100)+ boost::posix_time::microseconds(100);
+                    }
+
+                    st.execute();
+                }
+            }
+
+            {
+                statement st = (sql.prepare << "select tm from soci_test", into(pt_out));
+
+                for (int j = 0; j < 4; j++)
+                {
+                    st.execute();
+
+                    int i = 0;
+                    while (st.fetch())
+                    {
+                        for (std::vector<boost::posix_time::ptime>::iterator it = pt_out.begin(); it != pt_out.end() ; it++)
+                        {
+                            assert(*it == nov15 + boost::posix_time::seconds(i) + boost::posix_time::microseconds(i) ||
+                                *it == nov15 + boost::posix_time::seconds(i));
+                            i += 1;
+                        }
+                    }
+                    assert(i == 500);
+                    pt_out.resize(100);
+                }
+            }
+        }
+
+        std::cout << "test boost_posix_time passed" << std::endl;
+    }
+#   else
+    {
+        std::cout << "test boost_posix_time skipped (no Boost)" << std::endl;
+    }
+#   endif // endif(HAVE_BOOST)
+}
 
 }; // class common_tests
 

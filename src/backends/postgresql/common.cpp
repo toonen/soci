@@ -8,13 +8,12 @@
 #include "common.h"
 #include <soci-backend.h>
 #include <cstdlib>
-#include <ctime>
 
 
 namespace // anonymous
 {
 
-// helper function for parsing decimal data (for std::tm)
+// helper function for parsing decimal data (for soci::timestamp)
 long parse10(char const * & p1, char * & p2, char const * msg)
 {
     long v = std::strtol(p1, &p2, 10);
@@ -32,7 +31,7 @@ long parse10(char const * & p1, char * & p2, char const * msg)
 } // namespace anonymous
 
 
-void soci::details::postgresql::parse_std_tm(char const * buf, std::tm & t)
+void soci::details::postgresql::parse_soci_timestamp(char const * buf, soci::timestamp & t)
 {
     char const * p1 = buf;
     char * p2;
@@ -41,7 +40,7 @@ void soci::details::postgresql::parse_std_tm(char const * buf, std::tm & t)
     long year = 1900, month = 1, day = 1;
     long hour = 0, minute = 0, second = 0;
 
-    char const * errMsg = "Cannot convert data to std::tm.";
+    char const * errMsg = "Cannot convert data to soci::timestamp.";
 
     a = parse10(p1, p2, errMsg);
     separator = *p2;
@@ -88,6 +87,7 @@ void soci::details::postgresql::parse_std_tm(char const * buf, std::tm & t)
     t.tm_hour = hour;
     t.tm_min  = minute;
     t.tm_sec  = second;
+    t.ts_nsec  = 0;
 
     std::mktime(&t);
 }

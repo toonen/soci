@@ -9,9 +9,9 @@
 #define SOCI_FIREBIRD_COMMON_H_INCLUDED
 
 #include "soci-firebird.h"
+#include "timestamp.h"
 #include <cstdlib>
 #include <cstring>
-#include <ctime>
 #include <limits>
 #include <sstream>
 #include <iomanip>
@@ -29,9 +29,9 @@ namespace firebird
 
 char * allocBuffer(XSQLVAR* var);
 
-void tmEncode(short type, std::tm * src, void * dst);
+void tmEncode(short type, soci::timestamp * src, void * dst);
 
-void tmDecode(short type, void * src, std::tm * dst);
+void tmDecode(short type, void * src, soci::timestamp * dst);
 
 void setTextParam(char const * s, std::size_t size, char * buf_,
     XSQLVAR * var);
