@@ -13,6 +13,7 @@
 #include <cassert>
 #include <ctime>
 #include <cmath>
+#include <list>
 
 using namespace soci;
 using namespace soci::tests;
@@ -296,7 +297,13 @@ int main(int argc, char** argv)
         std::cout << "ODBC Error Code: " << e.odbc_error_code() << std::endl
                   << "Native Error Code: " << e.native_error_code() << std::endl
                   << "SOCI Message: " << e.what() << std::endl
-                  << "ODBC Message: " << e.odbc_error_message() << std::endl;
+                  << "ODBC Messages:" << std::endl;
+        const std::list<std::string> & msgs = e.get_messages();
+        std::list<std::string>::const_iterator iter;
+        for (iter = msgs.begin(); iter != msgs.end(); iter++)
+        {
+            std::cout << "    " << *iter << std::endl;
+        }
     }
     catch (std::exception const & e)
     {
