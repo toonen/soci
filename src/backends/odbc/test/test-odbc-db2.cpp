@@ -253,6 +253,73 @@ void test_odbc_db2_unsigned_long_long_vector()
     std::cout << "test odbc_db2_unsigned_long_long_vector passed" << std::endl;
 }
 
+struct table_creator_bigint : table_creator_base
+{
+    table_creator_bigint(session & sql)
+        : table_creator_base(sql)
+    {
+        sql << "CREATE TABLE SOCI_TEST (ID BIGINT, DATA VARCHAR(8), DT TIMESTAMP(9))";
+    }
+};
+
+void test_db2_subsecond_timestamps()
+{
+    session sql(backEnd, connectString);
+    int i;
+
+    table_creator_subsecond_timestamps table(sql);
+
+    {
+        std::vector<long long> ids(100);
+        std::vector<std::string> data(100);
+        std::vector<soci::timestamp> dts(100);
+        for (int i = 0; i < 100; i++)
+        {
+            ids[i] = 1000000000LL + i;
+            data[i] = "test";
+            dts[i].tm_year = 112;
+            dts[i].tm_mon = 7;
+            dts[i].tm_mday = 17;
+            dts[i].tm_hour = 0;
+            dts[i].tm_min = 0;
+            dts[i].tm_sec = i % 60;
+            dts[i].ts_nsec = i;
+        }
+
+        for (int i = 0; i < 100; i++)
+        {
+            sql << "INSERT INTO SOCI_TEST (ID, DATA, DT) VALUES (:id, :data, :dt)",
+                use(ids[i], "id"), use(data[i],"data"), use(dts[i], "dt");
+        }
+    }
+
+    {
+        i = 0;
+        rowset<row> rs = (sql.prepare<<"SELECT ID, DATA, DT FROM SOCI_TEST");
+        for (rowset<row>::const_iterator it = rs.begin(); it != rs.end(); it++)
+        {
+            const row & r = *it;
+            const long long id = r.get<long long>(0);
+            const std::string data = r.get<std::string>(1);
+            const soci::timestamp dt = r.get<soci::timestamp>(2);
+
+            assert(id == 1000000000LL + i);
+            assert(data == "test");
+            assert(dt.tm_year == 112);
+            assert(dt.tm_mon == 7);
+            assert(dt.tm_mday == 17);
+            assert(dt.tm_hour == 0);
+            assert(dt.tm_min == 0);
+            assert(dt.tm_sec == i % 60);
+            assert(dt.ts_nsec == i);
+
+            i += 1;
+        }
+    }
+
+    std::cout << "test db2_subsecond_timestamps passed" << std::endl;
+}
+
 int main(int argc, char** argv)
 {
 #ifdef _MSC_VER
@@ -288,6 +355,7 @@ int main(int argc, char** argv)
         test_odbc_db2_unsigned_long_long();
         test_odbc_db2_long_long_vector();
         test_odbc_db2_unsigned_long_long_vector();
+        test_db2_subsecond_timestamps();
 
         std::cout << "\nOK, all tests passed.\n\n";
         return EXIT_SUCCESS;
