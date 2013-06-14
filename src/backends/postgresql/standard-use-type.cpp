@@ -9,12 +9,12 @@
 #include "soci-postgresql.h"
 #include "blob.h"
 #include "rowid.h"
+#include "timestamp.h"
 #include <soci-platform.h>
 #include <libpq/libpq-fs.h> // libpq
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <limits>
 #include <sstream>
 
@@ -126,12 +126,12 @@ void postgresql_standard_use_type_backend::pre_use(indicator const * ind)
                     *static_cast<double *>(data_));
             }
             break;
-        case x_stdtm:
+        case x_timestamp:
             {
                 std::size_t const bufSize = 20;
                 buf_ = new char[bufSize];
 
-                std::tm * t = static_cast<std::tm *>(data_);
+                soci::timestamp * t = static_cast<soci::timestamp *>(data_);
                 snprintf(buf_, bufSize, "%d-%02d-%02d %02d:%02d:%02d",
                     t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
                     t->tm_hour, t->tm_min, t->tm_sec);

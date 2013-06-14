@@ -10,8 +10,8 @@
 
 #include "type-conversion-traits.h"
 #include "soci-backend.h"
+#include "timestamp.h"
 // std
-#include <ctime>
 #include <string>
 #include <vector>
 
@@ -118,10 +118,10 @@ struct exchange_traits<std::string>
 };
 
 template <>
-struct exchange_traits<std::tm>
+struct exchange_traits<soci::timestamp>
 {
     typedef basic_type_tag type_family;
-    enum { x_type = x_stdtm };
+    enum { x_type = x_timestamp };
 };
 
 template <typename T>

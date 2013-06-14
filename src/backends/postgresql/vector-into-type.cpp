@@ -13,7 +13,6 @@
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <sstream>
 
 #ifdef SOCI_POSTGRESQL_NOPARAMS
@@ -134,11 +133,11 @@ void postgresql_vector_into_type_backend::post_fetch(bool gotData, indicator * i
                     set_invector_(data_, i, val);
                 }
                 break;
-            case x_stdtm:
+            case x_timestamp:
                 {
-                    // attempt to parse the string and convert to std::tm
-                    std::tm t;
-                    parse_std_tm(buf, t);
+                    // attempt to parse the string and convert to soci::timestamp
+                    soci::timestamp t;
+                    parse_soci_timestamp(buf, t);
 
                     set_invector_(data_, i, t);
                 }
@@ -195,8 +194,8 @@ void postgresql_vector_into_type_backend::resize(std::size_t sz)
     case x_stdstring:
         resizevector_<std::string>(data_, sz);
         break;
-    case x_stdtm:
-        resizevector_<std::tm>(data_, sz);
+    case x_timestamp:
+        resizevector_<soci::timestamp>(data_, sz);
         break;
     default:
         throw soci_error("Into vector element used with non-supported type.");
@@ -230,8 +229,8 @@ std::size_t postgresql_vector_into_type_backend::size()
     case x_stdstring:
         sz = get_vector_size<std::string>(data_);
         break;
-    case x_stdtm:
-        sz = get_vector_size<std::tm>(data_);
+    case x_timestamp:
+        sz = get_vector_size<soci::timestamp>(data_);
         break;
     default:
         throw soci_error("Into vector element used with non-supported type.");

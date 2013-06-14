@@ -11,7 +11,7 @@
 #include "into-type.h"
 #include "use-type.h"
 #include "values.h"
-#include <ctime>
+#include "timestamp.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4355)
@@ -628,7 +628,7 @@ void statement_impl::bind_into<dt_unsigned_long_long>()
 template<>
 void statement_impl::bind_into<dt_date>()
 {
-    into_row<std::tm>();
+    into_row<soci::timestamp>();
 }
 
 void statement_impl::describe()

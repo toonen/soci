@@ -35,7 +35,7 @@ char * allocBuffer(XSQLVAR* var)
     else if (type == SQL_TIMESTAMP || type == SQL_TYPE_TIME
             || type == SQL_TYPE_DATE)
     {
-        size = sizeof(std::tm);
+        size = sizeof(soci::timestamp);
     }
     else
     {
@@ -45,7 +45,7 @@ char * allocBuffer(XSQLVAR* var)
     return new char[size];
 }
 
-void tmEncode(short type, std::tm * src, void * dst)
+void tmEncode(short type, soci::timestamp * src, void * dst)
 {
     switch (type & ~1)
     {
@@ -67,7 +67,7 @@ void tmEncode(short type, std::tm * src, void * dst)
     }
 }
 
-void tmDecode(short type, void * src, std::tm * dst)
+void tmDecode(short type, void * src, soci::timestamp * dst)
 {
     switch (type & ~1)
     {
@@ -143,7 +143,7 @@ void setTextParam(char const * s, std::size_t size, char * buf_,
                 }
             }
         }
-        std::tm t;
+        soci::timestamp t;
         std::memset(&t, 0, sizeof(t));
         t.tm_year = year - 1900;
         t.tm_mon = month - 1;
@@ -151,6 +151,7 @@ void setTextParam(char const * s, std::size_t size, char * buf_,
         t.tm_hour = hour;
         t.tm_min = min;
         t.tm_sec = sec;
+        t.ts_nsec = 0;
         std::memcpy(buf_, &t, sizeof(t));
         tmEncode(var->sqltype, &t, buf_);
     }
@@ -161,11 +162,12 @@ void setTextParam(char const * s, std::size_t size, char * buf_,
         {
             throw soci_error("Could not parse timestamp value.");
         }
-        std::tm t;
+        soci::timestamp t;
         std::memset(&t, 0, sizeof(t));
         t.tm_hour = hour;
         t.tm_min = min;
         t.tm_sec = sec;
+        t.ts_nsec = 0;
         std::memcpy(buf_, &t, sizeof(t));
         tmEncode(var->sqltype, &t, buf_);
     }

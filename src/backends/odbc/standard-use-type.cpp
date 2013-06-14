@@ -5,10 +5,10 @@
 
 #define SOCI_ODBC_SOURCE
 #include "soci-odbc.h"
+#include "timestamp.h"
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <sstream>
 
 using namespace soci;
@@ -102,9 +102,9 @@ void* odbc_standard_use_type_backend::prepare_for_bind(
         indHolder_ = SQL_NTS;
     }
     break;
-    case x_stdtm:
+    case x_timestamp:
     {
-        std::tm *t = static_cast<std::tm *>(data_);
+        soci::timestamp *t = static_cast<soci::timestamp *>(data_);
 
         sqlType = SQL_TIMESTAMP;
         cType = SQL_C_TIMESTAMP;
@@ -121,7 +121,7 @@ void* odbc_standard_use_type_backend::prepare_for_bind(
         ts->hour = static_cast<SQLUSMALLINT>(t->tm_hour);
         ts->minute = static_cast<SQLUSMALLINT>(t->tm_min);
         ts->second = static_cast<SQLUSMALLINT>(t->tm_sec);
-        ts->fraction = 0;
+        ts->fraction = static_cast<SQLUINTEGER>(t->ts_nsec);
     }
     break;
 

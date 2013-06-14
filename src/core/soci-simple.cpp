@@ -159,14 +159,14 @@ struct statement_wrapper
     std::map<int, int> into_ints;
     std::map<int, long long> into_longlongs;
     std::map<int, double> into_doubles;
-    std::map<int, std::tm> into_dates;
+    std::map<int, soci::timestamp> into_dates;
 
     std::vector<std::vector<indicator> > into_indicators_v;
     std::map<int, std::vector<std::string> > into_strings_v;
     std::map<int, std::vector<int> > into_ints_v;
     std::map<int, std::vector<long long> > into_longlongs_v;
     std::map<int, std::vector<double> > into_doubles_v;
-    std::map<int, std::vector<std::tm> > into_dates_v;
+    std::map<int, std::vector<soci::timestamp> > into_dates_v;
 
     // use elements
     std::map<std::string, indicator> use_indicators;
@@ -174,14 +174,14 @@ struct statement_wrapper
     std::map<std::string, int> use_ints;
     std::map<std::string, long long> use_longlongs;
     std::map<std::string, double> use_doubles;
-    std::map<std::string, std::tm> use_dates;
+    std::map<std::string, soci::timestamp> use_dates;
 
     std::map<std::string, std::vector<indicator> > use_indicators_v;
     std::map<std::string, std::vector<std::string> > use_strings_v;
     std::map<std::string, std::vector<int> > use_ints_v;
     std::map<std::string, std::vector<long long> > use_longlongs_v;
     std::map<std::string, std::vector<double> > use_doubles_v;
-    std::map<std::string, std::vector<std::tm> > use_dates_v;
+    std::map<std::string, std::vector<soci::timestamp> > use_dates_v;
 
     // format is: "YYYY MM DD hh mm ss"
     char date_formatted[20];
@@ -393,7 +393,7 @@ bool name_exists_check_failed(statement_wrapper & wrapper,
             break;
         case dt_date:
             {
-                typedef std::map<std::string, std::tm>::const_iterator iterator;
+                typedef std::map<std::string, soci::timestamp>::const_iterator iterator;
                 iterator const it = wrapper.use_dates.find(name);
                 name_exists = (it != wrapper.use_dates.end());
             }
@@ -452,7 +452,7 @@ bool name_exists_check_failed(statement_wrapper & wrapper,
         case dt_date:
             {
                 typedef std::map<std::string,
-                        std::vector<std::tm> >::const_iterator iterator;
+                        std::vector<soci::timestamp> >::const_iterator iterator;
                 iterator const it = wrapper.use_dates_v.find(name);
                 name_exists = (it != wrapper.use_dates_v.end());
             }
@@ -492,7 +492,7 @@ void resize_in_map(std::map<std::string, std::vector<T> > & m, int new_size)
 }
 
 // helper for formatting date values
-char const * format_date(statement_wrapper & wrapper, std::tm const & d)
+char const * format_date(statement_wrapper & wrapper, soci::timestamp const & d)
 {
     std::sprintf(wrapper.date_formatted, "%d %d %d %d %d %d",
         d.tm_year + 1900, d.tm_mon + 1, d.tm_mday,
@@ -501,7 +501,7 @@ char const * format_date(statement_wrapper & wrapper, std::tm const & d)
     return wrapper.date_formatted;
 }
 
-bool string_to_date(char const * val, std::tm & /* out */ dt,
+bool string_to_date(char const * val, soci::timestamp & /* out */ dt,
     statement_wrapper & wrapper)
 {
     // format is: "YYYY MM DD hh mm ss"
@@ -820,7 +820,7 @@ SOCI_DECL char const * soci_get_into_date(statement_handle st, int position)
     }
 
     // format is: "YYYY MM DD hh mm ss"
-    std::tm const & d = wrapper->into_dates[position];
+    soci::timestamp const & d = wrapper->into_dates[position];
     return format_date(*wrapper, d);
 }
 
@@ -995,7 +995,7 @@ SOCI_DECL char const * soci_get_into_date_v(statement_handle st, int position, i
         return "";
     }
 
-    std::vector<std::tm> const & v = wrapper->into_dates_v[position];
+    std::vector<soci::timestamp> const & v = wrapper->into_dates_v[position];
     if (index_check_failed(v, *wrapper, index) ||
         not_null_check_failed(*wrapper, position, index))
     {
@@ -1258,7 +1258,7 @@ SOCI_DECL void soci_set_use_date(statement_handle st, char const * name, char co
         return;
     }
 
-    std::tm dt;
+    soci::timestamp dt;
     bool const converted = string_to_date(val, dt, *wrapper);
     if (converted == false)
     {
@@ -1434,13 +1434,13 @@ SOCI_DECL void soci_set_use_date_v(statement_handle st,
         return;
     }
 
-    std::vector<std::tm> & v = wrapper->use_dates_v[name];
+    std::vector<soci::timestamp> & v = wrapper->use_dates_v[name];
     if (index_check_failed(v, *wrapper, index))
     {
         return;
     }
 
-    std::tm dt;
+    soci::timestamp dt;
     bool const converted = string_to_date(val, dt, *wrapper);
     if (converted == false)
     {
@@ -1531,7 +1531,7 @@ SOCI_DECL char const * soci_get_use_date(statement_handle st, char const * name)
     }
 
     // format is: "YYYY MM DD hh mm ss"
-    std::tm const & d = wrapper->use_dates[name];
+    soci::timestamp const & d = wrapper->use_dates[name];
     std::sprintf(wrapper->date_formatted, "%d %d %d %d %d %d",
         d.tm_year + 1900, d.tm_mon + 1, d.tm_mday,
         d.tm_hour, d.tm_min, d.tm_sec);
@@ -1669,13 +1669,13 @@ SOCI_DECL void soci_prepare(statement_handle st, char const * query)
         }
         {
             // dates
-            typedef std::map<std::string, std::tm>::iterator iterator;
+            typedef std::map<std::string, soci::timestamp>::iterator iterator;
             iterator uit = wrapper->use_dates.begin();
             iterator const uend = wrapper->use_dates.end();
             for ( ; uit != uend; ++uit)
             {
                 std::string const & use_name = uit->first;
-                std::tm & use_date = uit->second;
+                soci::timestamp & use_date = uit->second;
                 indicator & use_ind = wrapper->use_indicators[use_name];
                 wrapper->st.exchange(use(use_date, use_ind, use_name));
             }
@@ -1745,13 +1745,13 @@ SOCI_DECL void soci_prepare(statement_handle st, char const * query)
         {
             // dates
             typedef std::map<std::string,
-                std::vector<std::tm> >::iterator iterator;
+                std::vector<soci::timestamp> >::iterator iterator;
             iterator uit = wrapper->use_dates_v.begin();
             iterator const uend = wrapper->use_dates_v.end();
             for ( ; uit != uend; ++uit)
             {
                 std::string const & use_name = uit->first;
-                std::vector<std::tm> & use_date = uit->second;
+                std::vector<soci::timestamp> & use_date = uit->second;
                 std::vector<indicator> & use_ind =
                     wrapper->use_indicators_v[use_name];
                 wrapper->st.exchange(use(use_date, use_ind, use_name));

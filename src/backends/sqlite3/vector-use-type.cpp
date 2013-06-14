@@ -184,11 +184,11 @@ void sqlite3_vector_use_type_backend::pre_use(indicator const * ind)
                     snprintf(buf, bufSize, "%.20g", v[i]);
                 }
                 break;
-            case x_stdtm:
+            case x_timestamp:
                 {
-                    std::vector<std::tm> *pv
-                        = static_cast<std::vector<std::tm> *>(data_);
-                    std::vector<std::tm> &v = *pv;
+                    std::vector<soci::timestamp> *pv
+                        = static_cast<std::vector<soci::timestamp> *>(data_);
+                    std::vector<soci::timestamp> &v = *pv;
 
                     std::size_t const bufSize = 20;
                     buf = new char[bufSize];
@@ -243,8 +243,8 @@ std::size_t sqlite3_vector_use_type_backend::size()
     case x_stdstring:
         sz = get_vector_size<std::string>(data_);
         break;
-    case x_stdtm:
-        sz = get_vector_size<std::tm>(data_);
+    case x_timestamp:
+        sz = get_vector_size<soci::timestamp>(data_);
         break;
     default:
         throw soci_error("Use vector element used with non-supported type.");

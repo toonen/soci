@@ -9,10 +9,10 @@
 #define SOCI_POSTGRESQL_COMMON_H_INCLUDED
 
 #include "soci-postgresql.h"
+#include "timestamp.h"
 #include <limits>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <vector>
 
 namespace soci
@@ -116,7 +116,7 @@ T string_to_unsigned_integer(char const * buf)
 double string_to_double(char const * buf);
 
 // helper function for parsing datetime values
-void parse_std_tm(char const * buf, std::tm & t);
+void parse_soci_timestamp(char const * buf, soci::timestamp & t);
 
 // helper for vector operations
 template <typename T>

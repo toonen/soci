@@ -7,10 +7,10 @@
 
 #define SOCI_DB2_SOURCE
 #include "soci-db2.h"
+#include "timestamp.h"
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <sstream>
 
 using namespace soci;
@@ -56,6 +56,10 @@ void *db2_standard_use_type_backend::prepare_for_bind(
             size = sizeof(char) + 1;
             buf = new char[size];
             char *c = static_cast<char*>(data);
+            if (buf == NULL)
+            {
+                throw soci_error("failed to allocate memory for a temporary character");
+            }
             buf[0] = *c;
             buf[1] = '\0';
             ind = SQL_NTS;
@@ -70,21 +74,28 @@ void *db2_standard_use_type_backend::prepare_for_bind(
         cType = SQL_C_CHAR;
         size = s->size() + 1;
         buf = new char[size];
+        if (buf == NULL)
+        {
+            throw soci_error("failed to allocate memory for a temporary C-style string");
+        }
         strncpy(buf, s->c_str(), size);
         ind = SQL_NTS;
     }
     break;
-    case x_stdtm:
+    case x_timestamp:
         {
             sqlType = SQL_TIMESTAMP;
             cType = SQL_C_TIMESTAMP;
             buf = new char[sizeof(TIMESTAMP_STRUCT)];
-            std::tm *t = static_cast<std::tm *>(data);
-            data = buf;
-            size = 19; // This number is not the size in bytes, but the number
+            if (buf == NULL)
+            {
+                throw soci_error("failed to allocate memory for a temporary timestamp structure");
+            }
+            size = 29; // This number is not the size in bytes, but the number
                        // of characters in the date if it was written out
-                       // yyyy-mm-dd hh:mm:ss
+                       // yyyy-mm-dd-hh.mm.ss.nnnnnnnnn
 
+            soci::timestamp const *t = static_cast<soci::timestamp *>(data);
             TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(buf);
 
             ts->year = static_cast<SQLSMALLINT>(t->tm_year + 1900);
@@ -93,7 +104,7 @@ void *db2_standard_use_type_backend::prepare_for_bind(
             ts->hour = static_cast<SQLUSMALLINT>(t->tm_hour);
             ts->minute = static_cast<SQLUSMALLINT>(t->tm_min);
             ts->second = static_cast<SQLUSMALLINT>(t->tm_sec);
-            ts->fraction = 0;
+            ts->fraction = static_cast<SQLUINTEGER>(t->ts_nsec);
         }
         break;
 

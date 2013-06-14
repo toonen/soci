@@ -8,10 +8,10 @@
 
 #define SOCI_DB2_SOURCE
 #include "soci-db2.h"
+#include "timestamp.h"
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <sstream>
 
 using namespace soci;
@@ -33,6 +33,8 @@ void db2_vector_into_type_backend::define_by_pos(
 {
     this->data = data; // for future reference
     this->type = type; // for future reference
+    this->position = position;
+    position++;
 
     SQLINTEGER size = 0;       // also dummy
 
@@ -109,6 +111,10 @@ void db2_vector_into_type_backend::define_by_pos(
             colSize = size;
 
             buf = new char[bufSize];
+            if (buf == NULL)
+            {
+                throw soci_error("failed to allocate memory for a temporary array of characters");
+            }
             data = buf;
         }
         break;
@@ -117,9 +123,13 @@ void db2_vector_into_type_backend::define_by_pos(
             cType = SQL_C_CHAR;
             std::vector<std::string> *v
                 = static_cast<std::vector<std::string> *>(data);
-            colSize = statement_.column_size(position) + 1;
+            colSize = statement_.column_size(this->position) + 1;
             std::size_t bufSize = colSize * v->size();
             buf = new char[bufSize];
+            if (buf == NULL)
+            {
+                throw soci_error("failed to allocate memory for a temporary character C-stype strings");
+            }
 
             prepare_indicators(v->size());
 
@@ -127,20 +137,24 @@ void db2_vector_into_type_backend::define_by_pos(
             data = buf;
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
             cType = SQL_C_TYPE_TIMESTAMP;
-            std::vector<std::tm> *v
-                = static_cast<std::vector<std::tm> *>(data);
+            std::vector<soci::timestamp>  & stsv
+                = *static_cast<std::vector<soci::timestamp> *>(data);
 
-            prepare_indicators(v->size());
+            prepare_indicators(stsv.size());
 
             size = sizeof(TIMESTAMP_STRUCT);
             colSize = size;
 
-            std::size_t bufSize = size * v->size();
+            std::size_t bufSize = size * stsv.size();
 
             buf = new char[bufSize];
+            if (buf == NULL)
+            {
+                throw soci_error("failed to allocate memory for a temporary array of timestamps");
+            }
             data = buf;
         }
         break;
@@ -150,7 +164,7 @@ void db2_vector_into_type_backend::define_by_pos(
     case x_blob:      break; // not supported
     }
 
-    SQLRETURN cliRC = SQLBindCol(statement_.hStmt, static_cast<SQLUSMALLINT>(position++),
+    SQLRETURN cliRC = SQLBindCol(statement_.hStmt, static_cast<SQLUSMALLINT>(this->position),
                               cType, data, size, indptr);
     if (cliRC != SQL_SUCCESS)
     {
@@ -169,7 +183,7 @@ void db2_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
     {
         // first, deal with data
 
-        // only std::string, std::tm and Statement need special handling
+        // only std::string, soci::timestamp and Statement need special handling
         if (type == x_char)
         {
             std::vector<char> *vp
@@ -199,17 +213,17 @@ void db2_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
                 pos += colSize;
             }
         }
-        else if (type == x_stdtm)
+        else if (type == x_timestamp)
         {
-            std::vector<std::tm> *vp
-                = static_cast<std::vector<std::tm> *>(data);
+            std::vector<soci::timestamp> *vp
+                = static_cast<std::vector<soci::timestamp> *>(data);
 
-            std::vector<std::tm> &v(*vp);
+            std::vector<soci::timestamp> &v(*vp);
             char *pos = buf;
             std::size_t const vsize = v.size();
             for (std::size_t i = 0; i != vsize; ++i)
             {
-                std::tm t;
+                soci::timestamp t;
 
                 TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(pos);
                 t.tm_isdst = -1;
@@ -219,6 +233,7 @@ void db2_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
                 t.tm_hour = ts->hour;
                 t.tm_min = ts->minute;
                 t.tm_sec = ts->second;
+                t.ts_nsec = ts->fraction;
 
                 // normalize and compute the remaining fields
                 std::mktime(&t);
@@ -319,10 +334,10 @@ void db2_vector_into_type_backend::resize(std::size_t sz)
             v->resize(sz);
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *v
-                = static_cast<std::vector<std::tm> *>(data);
+            std::vector<soci::timestamp> *v
+                = static_cast<std::vector<soci::timestamp> *>(data);
             v->resize(sz);
         }
         break;
@@ -385,10 +400,10 @@ std::size_t db2_vector_into_type_backend::size()
             sz = v->size();
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *v
-                = static_cast<std::vector<std::tm> *>(data);
+            std::vector<soci::timestamp> *v
+                = static_cast<std::vector<soci::timestamp> *>(data);
             sz = v->size();
         }
         break;

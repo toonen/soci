@@ -42,7 +42,7 @@ enum exchange_type
     x_long_long,
     x_unsigned_long_long,
     x_double,
-    x_stdtm,
+    x_timestamp,
     x_statement,
     x_rowid,
     x_blob

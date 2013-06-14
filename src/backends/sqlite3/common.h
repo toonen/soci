@@ -8,18 +8,18 @@
 #ifndef SOCI_SQLITE3_COMMON_H_INCLUDED
 #define SOCI_SQLITE3_COMMON_H_INCLUDED
 
+#include "timestamp.h"
 #include <error.h>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <vector>
 #include <limits>
 
 namespace soci { namespace details { namespace sqlite3 {
 
 // helper function for parsing datetime values
-void parse_std_tm(char const *buf, std::tm &t);
+void parse_soci_timestamp(char const *buf, soci::timestamp &t);
 
 // helper for vector operations
 template <typename T>

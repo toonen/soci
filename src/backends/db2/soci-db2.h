@@ -112,6 +112,7 @@ struct SOCI_DB2_DECL db2_vector_into_type_backend : details::vector_into_type_ba
     char *buf;
     int position_;
     details::exchange_type type;
+    int position;
     SQLSMALLINT cType;
     std::size_t colSize;
 };

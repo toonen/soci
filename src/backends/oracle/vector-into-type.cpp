@@ -9,12 +9,12 @@
 #include "soci-oracle.h"
 #include "statement.h"
 #include "error.h"
+#include "timestamp.h"
 #include <soci-platform.h>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-#include <ctime>
 #include <sstream>
 
 #ifdef _MSC_VER
@@ -139,11 +139,11 @@ void oracle_vector_into_type_backend::define_by_pos(
             data = buf_;
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
             oracleType = SQLT_DAT;
-            std::vector<std::tm> *v
-                = static_cast<std::vector<std::tm> *>(data);
+            std::vector<soci::timestamp> *v
+                = static_cast<std::vector<soci::timestamp> *>(data);
 
             prepare_indicators(v->size());
 
@@ -181,7 +181,7 @@ void oracle_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
     {
         // first, deal with data
 
-        // only std::string, std::tm, long long and Statement need special handling
+        // only std::string, soci::timestamp, long long and Statement need special handling
         if (type_ == x_stdstring)
         {
             std::vector<std::string> *vp
@@ -236,12 +236,12 @@ void oracle_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
                 pos += colSize_;
             }
         }
-        else if (type_ == x_stdtm)
+        else if (type_ == x_timestamp)
         {
-            std::vector<std::tm> *vp
-                = static_cast<std::vector<std::tm> *>(data_);
+            std::vector<soci::timestamp> *vp
+                = static_cast<std::vector<soci::timestamp> *>(data_);
 
-            std::vector<std::tm> &v(*vp);
+            std::vector<soci::timestamp> &v(*vp);
 
             ub1 *pos = reinterpret_cast<ub1*>(buf_);
             std::size_t const vsize = v.size();
@@ -253,7 +253,7 @@ void oracle_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
                 }
                 else
                 {
-                    std::tm t;
+                    soci::timestamp t;
                     t.tm_isdst = -1;
 
                     t.tm_year = (*pos++ - 100) * 100;
@@ -263,6 +263,7 @@ void oracle_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
                     t.tm_hour = *pos++ - 1;
                     t.tm_min = *pos++ - 1;
                     t.tm_sec = *pos++ - 1;
+                    t.ts_nsec = 0;
 
                     // normalize and compute the remaining fields
                     std::mktime(&t);
@@ -367,10 +368,10 @@ void oracle_vector_into_type_backend::resize(std::size_t sz)
             v->resize(sz);
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *v
-                = static_cast<std::vector<std::tm> *>(data_);
+            std::vector<soci::timestamp> *v
+                = static_cast<std::vector<soci::timestamp> *>(data_);
             v->resize(sz);
         }
         break;
@@ -433,10 +434,10 @@ std::size_t oracle_vector_into_type_backend::size()
             sz = v->size();
         }
         break;
-    case x_stdtm:
+    case x_timestamp:
         {
-            std::vector<std::tm> *v
-                = static_cast<std::vector<std::tm> *>(data_);
+            std::vector<soci::timestamp> *v
+                = static_cast<std::vector<soci::timestamp> *>(data_);
             sz = v->size();
         }
         break;

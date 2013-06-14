@@ -9,13 +9,12 @@
 #include "soci-backend.h"
 // std
 #include <cstdlib>
-#include <ctime>
 
 
 namespace // anonymous
 {
 
-// helper function for parsing decimal data (for std::tm)
+// helper function for parsing decimal data (for soci::timestamp)
 long parse10(char const *&p1, char *&p2, char const* const msg)
 {
     long v = std::strtol(p1, &p2, 10);
@@ -33,12 +32,12 @@ long parse10(char const *&p1, char *&p2, char const* const msg)
 } // namespace anonymous
 
 
-void soci::details::sqlite3::parse_std_tm(char const *buf, std::tm &t)
+void soci::details::sqlite3::parse_soci_timestamp(char const *buf, soci::timestamp &t)
 {
     char const *p1 = buf;
     char *p2 = 0;
 
-    char const* const errMsg = "Cannot convert data to std::tm.";
+    char const* const errMsg = "Cannot convert data to soci::timestamp.";
 
     long year  = parse10(p1, p2, errMsg);
     long month = parse10(p1, p2, errMsg);
@@ -60,6 +59,7 @@ void soci::details::sqlite3::parse_std_tm(char const *buf, std::tm &t)
     t.tm_hour = hour;
     t.tm_min  = minute;
     t.tm_sec  = second;
+    t.ts_nsec = 0;
 
     std::mktime(&t);
 }
