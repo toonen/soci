@@ -29,6 +29,7 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <list>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -53,12 +54,28 @@ namespace soci
 class db2_soci_error : public soci_error {
 public:
     db2_soci_error(std::string const & msg, SQLRETURN rc) : soci_error(msg),errorCode(rc) {};
+    db2_soci_error(std::string const & msg, SQLRETURN rc, SQLSMALLINT htype, SQLHANDLE hdnl);
     ~db2_soci_error() throw() { };
-   
-    //We have to extract error information before exception throwing, cause CLI handles could be broken at the construction time   
-    static const std::string sqlState(std::string const & msg,const SQLSMALLINT htype,const SQLHANDLE hndl);
-       
-    SQLRETURN errorCode;    
+
+    const std::list<std::string> & get_messages(void)
+    {
+        return messages_;
+    }
+
+    const std::list<std::string> & get_diag_states(void)
+    {
+        return sql_states_;
+    }
+
+    bool has_state(const std::string & p_state);
+    bool has_state_class(const std::string & p_state);
+
+    SQLRETURN errorCode;
+
+protected:
+    std::list<std::string> messages_;
+    std::list<std::string> sql_states_;
+    std::list<int> sql_codes_;
 };
 
 struct db2_statement_backend;
