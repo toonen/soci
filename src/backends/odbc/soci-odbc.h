@@ -23,6 +23,7 @@
 # define SOCI_ODBC_DECL
 #endif
 
+#include <list>
 #include <vector>
 #include <soci-backend.h>
 #if defined(_MSC_VER) || defined(__MINGW32__)
@@ -316,72 +317,50 @@ struct odbc_session_backend : details::session_backend
 
 class SOCI_ODBC_DECL odbc_soci_error : public soci_error
 {
-    SQLCHAR message_[SQL_MAX_MESSAGE_LENGTH + 1];
-    SQLCHAR sqlstate_[SQL_SQLSTATE_SIZE + 1];
-    SQLINTEGER sqlcode_;
+protected:
+    std::list<std::string> messages_;
+    std::list<std::string> sqlstates_;
+    std::list<SQLINTEGER> sqlcodes_;
 
 public:
     odbc_soci_error(SQLSMALLINT htype,
-                  SQLHANDLE hndl,
-                  std::string const & msg)
-        : soci_error(msg)
+        SQLHANDLE hndl,
+        std::string const & msg);
+
+    ~odbc_soci_error(void) throw ()
     {
-        const char* socierror = NULL;
-
-        SQLSMALLINT length, i = 1;
-        switch ( SQLGetDiagRec(htype, hndl, i, sqlstate_, &sqlcode_,
-                               message_, SQL_MAX_MESSAGE_LENGTH + 1,
-                               &length) )
-        {
-          case SQL_SUCCESS:
-            // The error message was successfully retrieved.
-            break;
-
-          case SQL_INVALID_HANDLE:
-            socierror = "[SOCI]: Invalid handle.";
-            break;
-
-          case SQL_ERROR:
-            socierror = "[SOCI]: SQLGetDiagRec() error.";
-            break;
-
-          case SQL_SUCCESS_WITH_INFO:
-            socierror = "[SOCI]: Error message too long.";
-            break;
-
-          case SQL_NO_DATA:
-            socierror = "[SOCI]: No error.";
-            break;
-
-          default:
-            socierror = "[SOCI]: Unexpected SQLGetDiagRec() return value.";
-            break;
-        }
-
-        if (socierror)
-        {
-            // Use our own error message if we failed to retrieve the ODBC one.
-            strcpy(reinterpret_cast<char*>(message_), socierror);
-
-            // Use "General warning" SQLSTATE code.
-            strcpy(reinterpret_cast<char*>(sqlstate_), "01000");
-
-            sqlcode_ = 0;
-        }
     }
 
     SQLCHAR const * odbc_error_code() const
     {
-        return reinterpret_cast<SQLCHAR const *>(sqlstate_);
+        return reinterpret_cast<SQLCHAR const *>(sqlstates_.back().c_str());
     }
     SQLINTEGER native_error_code() const
     {
-        return sqlcode_;
+        return sqlcodes_.back();
     }
     SQLCHAR const * odbc_error_message() const
     {
-        return reinterpret_cast<SQLCHAR const *>(message_);
+        return reinterpret_cast<SQLCHAR const *>(messages_.back().c_str());
     }
+
+    const std::list<std::string> & get_messages(void) const
+    {
+        return messages_;
+    }
+
+    const std::list<std::string> & get_states(void) const
+    {
+        return sqlstates_;
+    }
+
+    const std::list<SQLINTEGER> & get_codes(void) const
+    {
+        return sqlcodes_;
+    }
+
+    bool has_state(const std::string & state) const;
+    bool has_state_class(const std::string & state_class) const;
 };
 
 inline bool is_odbc_error(SQLRETURN rc)
